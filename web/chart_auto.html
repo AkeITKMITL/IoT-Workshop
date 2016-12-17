@@ -1,0 +1,140 @@
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>IoT-Workshop | Plotting Live websockets data from a MQTT topic</title>
+		<link rel="stylesheet" type="text/css" href="assets/css/loading.css">
+	</head>
+
+	<body onload="init();">
+		<div id="container" style="height: 500px; min-width: 500px"></div>
+
+		<script type="text/javascript" src="assets/js/jquery.min.js"></script>
+		<script type="text/javascript" src="assets/js/mqttws31.js"></script>
+		<script type="text/javascript" src="assets/js/utils.js"></script>
+		<script src="assets/vendor/highcharts/highstock.js"></script>
+		<script src="assets/vendor/highcharts/exporting.js"></script>
+		<script type="text/javascript">
+
+			var MQTTbroker = '161.246.38.16';
+			var MQTTport = 8000;
+			var MQTTtopic = 'temp'; //works with wildcard # and + topics dynamically now
+
+			var chart; // global variuable for chart
+			var dataTopics = new Array();
+
+			// MQTT Client
+			var client = new Paho.MQTT.Client(MQTTbroker, MQTTport, getRandomClientId());
+			client.onMessageArrived = onMessageArrived;
+			client.onConnectionLost = onConnectionLost;
+			// connect to broker is at the bottom of the init() function !!!!
+
+
+			//mqtt connecton options including the mqtt broker subscriptions
+			var options = {
+				timeout: 3,
+				onSuccess: () => {
+					console.log("[mqtt:connection] connected");
+					alert("Connection succeeded.");
+					client.subscribe(MQTTtopic, {qos: 1});
+				},
+				onFailure: (message) => {
+					console.log("[mqtt:connection] failed, ERROR: " + message.errorMessage);
+					alert("Connection failed, ERROR: " + message.errorMessage);
+					window.setTimeout(location.reload(), 5000); //wait 5seconds before trying to connect again.
+				}
+			};
+
+			function onConnectionLost(responseObject) {
+				console.log("[mqtt:connection] lost, ERROR: " + responseObject.errorMessage);
+				window.setTimeout(location.reload(), 5000);
+			};
+
+			//what is done when a message arrives from the broker
+			function onMessageArrived(message) {
+				console.log("[mqtt:arrived] " + message.destinationName, '',message.payloadString);
+
+				//check if it is a new topic, if not add it to the array
+				if (dataTopics.indexOf(message.destinationName) < 0){
+			    dataTopics.push(message.destinationName); //add new topic to array
+			    var y = dataTopics.indexOf(message.destinationName); //get the index no
+
+				  //create new data series for the chart
+					var newseries = { id: y, name: message.destinationName, data: [] };
+					chart.addSeries(newseries); //add the series
+				};
+
+				var y = dataTopics.indexOf(message.destinationName); //get the index no of the topic from the array
+				var myEpoch = new Date().getTime(); //get current epoch time
+				var thenum = message.payloadString.replace( /^\D+/g, ''); //remove any text spaces from the message
+				var plotMqtt = [myEpoch, Number(thenum)]; //create the array
+
+				if (isNumber(thenum)) plot(plotMqtt, y);
+			};
+
+			// Gen point every 1 sec
+			function lineGen() {
+				var myEpoch = new Date().getTime();
+				var plotMqtt = [myEpoch, 0];
+				plot(plotMqtt, 0);
+			}
+
+			//function that is called once the document has loaded
+			function init() {
+				//i find i have to set this to false if i have trouble with timezones.
+				Highcharts.setOptions({
+					global: { useUTC: false }
+				});
+				// Connect to MQTT broker
+				client.connect(options);
+
+				var newseries = { id: 0, name: MQTTtopic, data: [] };
+
+				chart.addSeries(newseries); //add the series
+				dataTopics.push(MQTTtopic); // add subscribe topic to dataTopics
+				setInterval(lineGen, 1000);
+			};
+
+
+			//this adds the plots to the chart
+			function plot(point, chartno) {
+				console.log("[point] " + point);
+
+				var series = chart.series[0];
+				var shift = series.data.length > 20; // shift if the series is longer than 20
+				// add point to chart object
+				chart.series[chartno].addPoint(point, true, shift);
+			};
+
+			//settings for the chart
+			$(() => {
+				chart = new Highcharts.Chart({
+					chart: {
+						renderTo: 'container',
+						defaultSeriesType: 'spline'
+					},
+					title: {
+						text: 'Plotting Live websockets data from a MQTT topic'
+					},
+					subtitle: {
+						text: 'broker: ' + MQTTbroker + ' | port: ' + MQTTport + ' | topic : ' + MQTTtopic
+					},
+					xAxis: {
+						type: 'datetime',
+						tickPixelInterval: 150,
+						maxZoom: 20 * 1000
+					},
+					yAxis: {
+						minPadding: 0.2,
+						maxPadding: 0.2,
+						title: {
+							text: 'Value',
+							margin: 80
+						}
+					},
+					series: []
+				});
+			});
+
+		</script>
+	</body>
+</html>

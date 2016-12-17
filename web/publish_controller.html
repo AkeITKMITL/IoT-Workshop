@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>IoT-Workshop | Publish Controller</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<link rel="stylesheet" type="text/css" href="assets/vendor/bootstrap/css/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="assets/vendor/snackbarjs/snackbar.min.css">
+	<link rel="stylesheet" type="text/css" href="assets/vendor/bootstrap-material-design/css/roboto.min.css">
+	<link rel="stylesheet" type="text/css" href="assets/vendor/bootstrap-material-design/css/ripples.min.css">
+	<link rel="stylesheet" type="text/css" href="assets/vendor/bootstrap-material-design/css/material-fullpalette.min.css">
+	<link rel="stylesheet" type="text/css" href="assets/vendor/nouislider/nouislider.min.css">
+	<link rel="stylesheet" type="text/css" href="assets/css/loading.css">
+</head>
+<body>
+	<div class="container" style="padding-top: 30px;">
+		<div class="text-center" id="main">
+			<h1>Publish Controller</h1>
+			<hr>
+			<div style="padding: 0 10% 0 10%;">
+				<div id="slider-handles"></div>
+			</div>
+			<h3>Value: <span id="value">0</span></h3>
+			<button class="btn btn-material-cyan-500" id="publish-button" data-value="0">Publish
+				<div class="ripple-wrapper"></div>
+			</button>
+
+			<div class="row">
+				<div class="col-md-12">
+						<button class="btn btn-material-green-A400" id="publish-button" data-value="on">On<div class="ripple-wrapper"></div>
+						</button>
+						<button class="btn btn-material-deep-orange-A400" id="publish-button" data-value="off">Off<div class="ripple-wrapper"></div>
+						</button>
+				</div>
+			</div>
+		</div>
+		<div class="loader" id="loader">Loading...</div>
+	</div>
+	<script type="text/javascript" src="assets/vendor/jquery/jquery.min.js"></script>
+	<script type="text/javascript" src="assets/js/mqttws31.js"></script>
+	<script type="text/javascript" src="assets/vendor/bootstrap/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="assets/vendor/nouislider/nouislider.min.js"></script>
+	<script type="text/javascript" src="assets/vendor/snackbarjs/snackbar.min.js"></script>
+	<script type="text/javascript" src="assets/vendor/bootstrap-material-design/js/material.min.js"></script>
+	<script type="text/javascript" src="assets/vendor/bootstrap-material-design/js/ripples.min.js"></script>
+	<script type="text/javascript" src="assets/js/utils.js"></script>
+	<script type="text/javascript">
+
+	$(() => {
+		$.material.init();
+		$('#main').hide();
+
+		// Broker variables
+		var MQTTbroker = '161.246.38.16';
+		var MQTTport = 8000;
+		var MQTTtopic = 'temp';
+
+		// MQTT connecton options
+		var options = {
+			timeout: 3,
+			onSuccess: () => {
+				console.log("[mqtt:connection] connected");
+				alert("Connection succeeded.");
+				$('#main').show();
+				$('#loader').hide();
+			},
+			onFailure: (message) => {
+				console.log("[mqtt:connection] failed, ERROR: " + message.errorMessage);
+				alert("Connection failed, ERROR: " + message.errorMessage);
+				window.setTimeout(location.reload(),5000); //wait 5seconds before trying to connect again.
+			}
+		};
+
+		// MQTT Client
+		var client = new Paho.MQTT.Client(MQTTbroker, MQTTport, getRandomClientId());
+		client.connect(options); // Connect to broker
+
+		var rangeSlider = document.getElementById('slider-handles');
+		var valueShow = document.getElementById('value');
+
+		noUiSlider.create(rangeSlider, {
+			start: 0,
+			connect: "lower",
+			range: {
+				'min': 0,
+				'max': 100
+			}
+		});
+
+		rangeSlider.noUiSlider.on('update', (values, handle) => {
+			$(valueShow).text(parseInt(values[handle]));
+			$('#publish-button').data('value', parseInt(values[handle]));
+		});
+
+		$('button').click(function(e) {
+			var value = $(this).data('value').toString();
+
+			message = new Paho.MQTT.Message(value);
+			message.destinationName = MQTTtopic;
+			client.send(message);
+
+			$.snackbar({
+				content: "Published: " + value
+			});
+			console.log("[mqtt:publish] " + value);
+		});
+	});
+	</script>
+</body>
+</html>
