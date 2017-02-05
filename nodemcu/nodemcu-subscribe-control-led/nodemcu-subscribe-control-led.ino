@@ -25,6 +25,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print(topicStr);
   Serial.print("] : ");
   Serial.println(payloadStr);
+
+  payloadStr.toLowerCase();
+  if (payloadStr == "on") {
+    digitalWrite(13, HIGH);
+  }
+  else if(payloadStr == "off") {
+    digitalWrite(13, LOW);
+  }
 }
 
 void setup_wifi() {
@@ -73,6 +81,7 @@ void reconnect() {
 }
 
 void setup() {
+  pinMode(13, OUTPUT);
   Serial.begin(115200);
   setup_wifi();
   client.setServer(mqtt_server, 1883);

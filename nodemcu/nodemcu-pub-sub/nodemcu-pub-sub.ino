@@ -37,15 +37,18 @@ void setup_wifi() {
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
-  String payload_str = "";
-  String topic_str = String(topic);
+  String payloadStr = String();
+  String topicStr = String(topic);
+  
+  // Convert byte to String
   for (int i = 0; i < length; i++) {
-    payload_str += (char)payload[i];
+    payloadStr += (char)payload[i];
   }
+  
   Serial.print("Message arrived [");
-  Serial.print(topic_str);
-  Serial.print("] ");
-  Serial.println(payload_str);
+  Serial.print(topicStr);
+  Serial.print("] : ");
+  Serial.println(payloadStr);
 }
 
 void reconnect() {
