@@ -2,8 +2,8 @@
 #include <PubSubClient.h>
 
 // Update these with values suitable for your network.
-const char* ssid = "";
-const char* password = "";
+const char* ssid = "508_Wi-Fi_2.4";
+const char* password = "123456789";
 const char* mqtt_server = "broker.mqttdashboard.com";
 
 WiFiClient espClient;
