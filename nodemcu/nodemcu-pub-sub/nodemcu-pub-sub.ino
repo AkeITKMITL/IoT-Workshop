@@ -11,7 +11,6 @@ PubSubClient client(espClient);
 
 long count = 0;
 long lastMsg = 0;
-char clientID[15];
 char destinationTopic[]   = "iot-workshop";
 
 void setup_wifi() {
@@ -28,6 +27,9 @@ void setup_wifi() {
     delay(500);
     Serial.print(".");
   }
+
+  randomSeed(micros());
+  
   Serial.println("");
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
@@ -46,21 +48,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.println(payload_str);
 }
 
-void setup() {
-  pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
-  Serial.begin(115200);
-  setup_wifi();
-  client.setServer(mqtt_server, 1883);
-  client.setCallback(callback);
-}
-
 void reconnect() {
   // Loop until we're reconnected
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    String("iot-" + String(random(1000000))).toCharArray(clientID, 15); //Random Client ID
-    if (client.connect(clientID)) {
+    String clientId = "IoT-Workshop-";
+    clientId += String(random(0xffff), HEX);
+    if (client.connect(clientId.c_str())) {
       Serial.println("connected");
       // Once connected, publish an announcement...
       client.publish(destinationTopic, "hello, world");
@@ -74,6 +69,14 @@ void reconnect() {
       delay(1000);
     }
   }
+}
+
+void setup() {
+  pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
+  Serial.begin(115200);
+  setup_wifi();
+  client.setServer(mqtt_server, 1883);
+  client.setCallback(callback);
 }
 
 void loop() {

@@ -9,29 +9,8 @@ const char* mqtt_server = "broker.mqttdashboard.com";
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-char clientID[15];
 char destinationTopic[]   = "iot-workshop";
 long count = 1;
-
-void reconnect() {
-  // Loop until we're reconnected
-  while (!client.connected()) {
-    Serial.print("Attempting MQTT connection...");
-    // Attempt to connect
-    String("iot-" + String(random(1000000))).toCharArray(clientID, 15); //Random Client ID
-    if (client.connect(clientID)) {
-      Serial.println("connected");
-      // Once connected, publish an announcement...
-      client.publish(destinationTopic, "hello, world");
-    } else {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
-      // Wait 5 seconds before retrying
-      delay(1000);
-    }
-  }
-}
 
 void setup_wifi() {
   delay(10);
@@ -47,14 +26,36 @@ void setup_wifi() {
     Serial.print(".");
   }
 
+  randomSeed(micros());
+
   Serial.println("");
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 }
 
+void reconnect() {
+  // Loop until we're reconnected
+  while (!client.connected()) {
+    Serial.print("Attempting MQTT connection...");
+    // Attempt to connect
+    String clientId = "IoT-Workshop-";
+    clientId += String(random(0xffff), HEX);
+    if (client.connect(clientId.c_str())) {
+      Serial.println("connected");
+      // Once connected, publish an announcement...
+      client.publish(destinationTopic, "hello, world");
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 5 seconds");
+      // Wait 5 seconds before retrying
+      delay(1000);
+    }
+  }
+}
+
 void setup() {
-  pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
   Serial.begin(115200);
   setup_wifi();
   client.setServer(mqtt_server, 1883);
