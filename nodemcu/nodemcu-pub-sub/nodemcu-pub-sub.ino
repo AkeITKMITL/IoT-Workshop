@@ -90,10 +90,12 @@ void loop() {
   if (now - lastMsg > 2000) {
     lastMsg = now;
 
-    char bufferStr[40];
-    sprintf(bufferStr, "I'm Arduino. - %d", count++);
+    ++count;
+    String publishStr = "I'm Arduino. - ";
+    publishStr.concat(count); // Concatenate string
+   
     Serial.print("Publishing... : ");
-    Serial.println(bufferStr);
-    client.publish(destinationTopic, bufferStr);
+    Serial.println(publishStr.c_str());
+    client.publish(destinationTopic, publishStr.c_str());
   }
 }

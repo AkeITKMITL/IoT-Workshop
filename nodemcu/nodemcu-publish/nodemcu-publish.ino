@@ -9,8 +9,9 @@ const char* mqtt_server = "broker.mqttdashboard.com";
 WiFiClient espClient;
 PubSubClient client(espClient);
 
+long count = 0;
+long lastMsg = 0;
 char destinationTopic[]   = "iot-workshop";
-long count = 1;
 
 void setup_wifi() {
   delay(10);
@@ -67,10 +68,17 @@ void loop() {
   }
   client.loop();
 
-  char bufferStr[40];
-  sprintf(bufferStr, "I'm Arduino. - %d", count++);
-  Serial.print("Publishing... : ");
-  Serial.println(bufferStr);
-  client.publish(destinationTopic, bufferStr);
-  delay(5000);
+  // publish every 2 seconds
+  long now = millis();
+  if (now - lastMsg > 2000) {
+    lastMsg = now;
+
+    ++count;
+    String publishStr = "I'm Arduino. - ";
+    publishStr.concat(count); // Concatenate string
+   
+    Serial.print("Publishing... : ");
+    Serial.println(publishStr.c_str());
+    client.publish(destinationTopic, publishStr.c_str());
+  }
 }
